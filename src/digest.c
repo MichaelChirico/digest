@@ -37,6 +37,9 @@
 #include "xxhash.h"
 #include "pmurhash.h"
 #include "blake3.h"
+#if defined(HAVE_CRC32C_PKG)
+#include "crc32cAPI.h"
+#endif
 #include "crc32c.h"
 
 #ifdef _WIN32
@@ -234,7 +237,12 @@ SEXP digest(SEXP Txt, SEXP Algo, SEXP Length, SEXP Skip, SEXP Leave_raw, SEXP Se
     }
     case 11: {		/* crc32c */
         uint32_t crc = 0;       /* initial value, can be zero */
+#if defined(HAVE_CRC32C_PKG)
+        /* this uses the potentially hardware accelerated version from the crc32c package */
+        crc = c_crc32c_uint8((const uint8_t*) txt, (size_t) nChar);
+#else
         crc = crc32c_extend(crc, (const uint8_t*) txt, (size_t) nChar);
+#endif
         snprintf(output, 128, "%08x", crc);
         break;
     }
@@ -503,12 +511,22 @@ SEXP digest(SEXP Txt, SEXP Algo, SEXP Length, SEXP Skip, SEXP Leave_raw, SEXP Se
         if (length>=0) {
             while ( ( nChar = fread( buf, 1, sizeof( buf ), fp ) ) > 0 && length>0) {
                 if (nChar>length) nChar=length;
+#if defined(HAVE_CRC32C_PKG)
+                /* this uses the potentially hardware accelerated version from the crc32c package */
+                crc = c_crc32c_extend(crc, (const uint8_t*) buf, (size_t) nChar);
+#else
                 crc = crc32c_extend(crc, (const uint8_t*) buf, (size_t) nChar);
+#endif
                 length -= nChar;
             }
         } else {
             while ( ( nChar = fread( buf, 1, sizeof( buf ), fp ) ) > 0)
+#if defined(HAVE_CRC32C_PKG)
+                /* this uses the potentially hardware accelerated version from the crc32c package */
+                crc = c_crc32c_extend(crc, (const uint8_t*) buf, (size_t) nChar);
+#else
                 crc = crc32c_extend(crc, (const uint8_t*) buf, (size_t) nChar);
+#endif
         }
         snprintf(output, 128, "%08x", (unsigned int) crc);
         break;

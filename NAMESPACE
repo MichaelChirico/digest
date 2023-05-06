@@ -44,3 +44,6 @@ S3method(makeRaw, default)
 S3method(makeRaw, digest)
 S3method(makeRaw, character)
 S3method(makeRaw, raw)
+
+if (requireNamespace("crc32c", quietly=TRUE))
+    importFrom(crc32c, crc32c)

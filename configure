@@ -1,0 +1,17 @@
+#!/bin/sh
+
+: ${R_HOME=`R RHOME`}
+if test -z "${R_HOME}"; then
+    echo Could not determine R_HOME.
+    exit 1
+fi
+
+${R_HOME}/bin/Rscript --vanilla -e 'hasPkg <- "crc32c" %in% rownames(installed.packages()); q(save="no", status=hasPkg)'
+if [ $? -eq 1 ]; then
+    echo "** compiling with crc32c support"
+    crc32cincdir=`${R_HOME}/bin/Rscript --vanilla -e 'cat(system.file("include", package="crc32c"))')`
+    crc32cflags="-I${crc32cincdir} -DHAVE_CRC32C_PKG"
+    sed -e "s|@crc32c@|$crc32cflags |" src/Makevars.in > src/Makevars
+else
+    echo "** compiling without crc32c support"
+fi
